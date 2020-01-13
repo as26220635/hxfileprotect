@@ -1,6 +1,5 @@
 package cn.kim.util;
 
-import cn.kim.common.annotation.Validate;
 import cn.kim.common.attr.Attribute;
 import cn.kim.common.attr.AttributePath;
 import cn.kim.common.attr.MagicValue;
@@ -32,6 +31,7 @@ import java.net.URLEncoder;
 import java.security.InvalidKeyException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicStampedReference;
 
 /**
  * Created by 余庚鑫 on 2017/3/25.
@@ -41,7 +41,9 @@ public class CommonUtil {
     /**
      * 加密解密字段
      */
-    public static String[] CONTAINS_ENCRYPT_FIELDS = {"id", "key", "sps_step_transactor"};
+    public static String[] CONTAINS_ENCRYPT_FIELDS = {"id", "key",
+            "sps_step_transactor", "sps_step_transactor_branch",
+            "sps_step_parent_transactor", "sps_step_transactor_parent_branch"};
     /**
      * 不加密字段
      */
@@ -554,6 +556,17 @@ public class CommonUtil {
 //        value = value.replaceAll("script", "");
 //        return HtmlUtils.htmlUnescape(HtmlUtils.htmlEscape(value));
         return ValidateUtil.isEmpty(value) ? value : HtmlUtils.htmlEscape(HtmlUtils.htmlUnescape(value)).trim();
+    }
+
+    /**
+     * ID加密
+     *
+     * @param obj
+     * @return
+     * @throws InvalidKeyException
+     */
+    public static Object idEncrypt(Object... obj) throws InvalidKeyException {
+        return idEncrypt(TextUtil.joinValue(Attribute.SERVICE_SPLIT, obj));
     }
 
     /**

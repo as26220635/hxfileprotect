@@ -35,6 +35,7 @@
         var data = getRowData(this);
         var param = {
             SPD_ID: data.ID,
+            SPS_PARENTID: '${fns:AESEncode("0")}',
             TITLE: data.SPD_NAME,
         };
         loadUrl('${BASE_URL}${fns:getUrlByMenuCode("SYSTEM:PROCESS_DEFINITION_TABS")}' + urlEncode(param));
@@ -43,7 +44,10 @@
     //切换状态
     function onSwitchChange($this, field, check, IS_STATUS) {
         showLoadingContentDiv();
-        ajax.put('${BASE_URL}${Url.PROCESS_DEFINITION_SWITCH_STATUS_URL}', {ID: $this.val(), IS_STATUS: IS_STATUS}, function (data) {
+        ajax.put('${BASE_URL}${Url.PROCESS_DEFINITION_SWITCH_STATUS_URL}', {
+            ID: $this.val(),
+            IS_STATUS: IS_STATUS
+        }, function (data) {
             if (data.code == STATUS_SUCCESS) {
                 demo.showNotify(ALERT_SUCCESS, '状态修改成功!');
             } else {

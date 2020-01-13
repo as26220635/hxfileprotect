@@ -122,6 +122,14 @@
         <function-signature>java.lang.Object idEncrypt(java.lang.Object)</function-signature>
         <example>${fns:AESEncode(obj)}</example>
     </function>
+    <!--AES加密-->
+    <function>
+        <description>AES加密</description>
+        <name>AESEncodeJoin</name>
+        <function-class>cn.kim.util.CommonUtil</function-class>
+        <function-signature>java.lang.Object idEncrypt(java.lang.Object...)</function-signature>
+        <example>${fns:AESEncodeJoin(obj)}</example>
+    </function>
     <!--AES解密-->
     <function>
         <description>AES解密</description>

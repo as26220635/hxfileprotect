@@ -472,7 +472,7 @@ tableView = {
      */
     btnClick: throttle(function (btn) {
         btn.click();
-    }, 1),
+    }, 0.3),
     /**
      * 序号
      * @param api
@@ -504,7 +504,10 @@ tableView = {
             paging: true,
             cache: true,
             headLength: true,
-            modal:false,
+            modal: false,
+            scrollY: '',
+            scrollX: false,
+            scrollCollapse: false,
             rowId: 'ID',
             pageLength: 10,
             columnDefs: [],
@@ -533,6 +536,9 @@ tableView = {
             searching: false,//禁用datatables搜索
             deferRender: true, //当处理大数据时，延迟渲染数据，有效提高Datatables处理能力
             destroy: true,//防止重复初始化
+            scrollY: settings.scrollY,//滚动高度
+            scrollX: settings.scrollX,//滚动高度
+            scrollCollapse: settings.scrollCollapse,
             info: settings.info,
             // rowId: settings.rowId,
             createdRow: settings.createdRow,
@@ -566,6 +572,12 @@ tableView = {
                     rows: {
                         _: "你选择了 %d 行",
                     }
+                }
+            },
+            //初始化完成
+            fnInitComplete: function (settings, json) {
+                if (options.fnInitComplete != undefined) {
+                    options.fnInitComplete(settings, json);
                 }
             },
             //在每次table被draw完后回调函数
@@ -661,7 +673,7 @@ tableView = {
         let $table = options.object.DataTable(optionData);
 
         //切换待审已审
-        if (!settings.modal){
+        if (!settings.modal) {
             $('#processAllBtn,#processStayBtn,#processAlreadyBtn').off('click');
             $('#processAllBtn,#processStayBtn,#processAlreadyBtn').on('click', function () {
                 let $this = $(this);
@@ -895,10 +907,10 @@ model = {
     },
     //底部的样式
     footerModel: {ADMIN: 'admin', MY_HOME: 'my_home'},
-    //显示,1秒内只能执行一次防止多次点击
+    //显示,0.3秒内只能执行一次防止多次点击
     show: throttle(function (options) {
         model.init(options);
-    }, 1),
+    }, 0.3),
     //提示用
     noDelay: function (options) {
         model.init(options);

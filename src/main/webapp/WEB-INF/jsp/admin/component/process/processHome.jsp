@@ -44,6 +44,8 @@
     <input type="hidden" name="BUS_PROCESS2" value="${SPD.BUS_PROCESS2}">
     <input type="hidden" name="SPS_ID" value="${STEP.ID}">
     <input type="hidden" name="NEXT_SPS_ID" value="${NEXT_STEP.ID}">
+    <input type="hidden" name="NOW_SCHEDULE_ID" value="${NOW_SCHEDULE_ID}">
+    <input type="hidden" name="SPS_STEP_BRANCH" value="${SPS_STEP_BRANCH}">
     <c:if test="${not empty SHOW_SO_ID}">
         <input type="hidden" name="SHOW_SO_ID" value="${SHOW_SO_ID}">
     </c:if>
@@ -82,17 +84,84 @@
         <input type="hidden" ${fns:validField("SYS_PROCESS_SCHEDULE","PROCESS_TYPE")} value="${PROCESS_TYPE}">
     </div>
 
-    <div class="form-group has-feedback">
-        <label>下一步办理人:</label>
-        <select ${fns:validField("SYS_PROCESS_SCHEDULE","SPS_STEP_TRANSACTOR")} class="form-control select2">
-            <option value="" selected>请选择</option>
-            <c:forEach items="${TRANSACTOR_LIST}" var="TRANSACTOR" varStatus="status">
-                <option value="${TRANSACTOR.get("KEY")}"
-                        <c:if test="${status.index == 0 && TRANSACTOR_LIST.size() == 1}">selected</c:if>
-                >${TRANSACTOR.get("VALUE")}</option>
-            </c:forEach>
-        </select>
-    </div>
+    <%--办理人--%>
+    <c:choose>
+        <c:when test="${ProcessType.SUBMIT.toString() eq processBtnType and SPS_STEP_BRANCH ne ProcessBranch.FIXED.toString()}">
+            <div class="form-group has-feedback">
+                <label>下一步分支办理人:</label>
+                <br>
+                <c:forEach items="${childrenTransactorList}" var="children" varStatus="s1">
+                    <label>分支: ${children.stepTab}</label>
+                    <select id="SPS_STEP_TRANSACTOR_BRANCH_${s1.index}" name="SPS_STEP_TRANSACTOR_BRANCH"
+                            class="form-control select2" required>
+                        <option value="" selected>请选择</option>
+                        <c:forEach items="${children.transactorList}" var="TRANSACTOR" varStatus="s2">
+                            <option value="${TRANSACTOR.get("joinTransactor")}"
+                                    <c:if test="${s2.index == 0 && children.transactorList.size() == 1}">selected</c:if>
+                            >${TRANSACTOR.get("VALUE")}</option>
+                        </c:forEach>
+                    </select>
+                </c:forEach>
+            </div>
+        </c:when>
+        <c:otherwise>
+            <div class="form-group has-feedback">
+                <label>下一步办理人:</label>
+                <select ${fns:validField("SYS_PROCESS_SCHEDULE","SPS_STEP_TRANSACTOR")} class="form-control select2">
+                    <option value="" selected>请选择</option>
+                    <c:forEach items="${TRANSACTOR_LIST}" var="TRANSACTOR" varStatus="status">
+                        <option value="${TRANSACTOR.get("KEY")}"
+                                <c:if test="${status.index == 0 && TRANSACTOR_LIST.size() == 1}">selected</c:if>
+                        >${TRANSACTOR.get("VALUE")}</option>
+                    </c:forEach>
+                </select>
+            </div>
+        </c:otherwise>
+    </c:choose>
+    <%--父流程参数--%>
+    <c:if test="${isSelectParent}">
+        <input type="hidden" name="isSelectParent" value="${isSelectParent}">
+        <input type="hidden" name="SPS_STEP_PARENT_BRANCH" value="${nextParentBranch}">
+        <input type="hidden" name="NEXT_PARENT_SPS_ID" value="${nextParentStep.ID}">
+        <input type="hidden" name="PARENT_SPS_ID" value="${parentStepId}">
+        <input type="hidden" name="PARENT_SCHEDULE_ID" value="${parentScheduleId}">
+        <%--办理人--%>
+        <c:choose>
+            <c:when test="${nextParentBranch ne ProcessBranch.FIXED.toString()}">
+                <div class="form-group has-feedback">
+                    <label class="text-red">父流程下一步分支办理人:</label>
+                    <br>
+                    <c:forEach items="${childrenParentTransactorList}" var="children" varStatus="s1">
+                        <label>分支: ${children.stepTab}</label>
+                        <select id="SPS_STEP_TRANSACTOR_PARENT_BRANCH_${s1.index}"
+                                name="SPS_STEP_TRANSACTOR_PARENT_BRANCH"
+                                class="form-control select2" required>
+                            <option value="" selected>请选择</option>
+                            <c:forEach items="${children.transactorList}" var="TRANSACTOR" varStatus="s2">
+                                <option value="${TRANSACTOR.get("joinTransactor")}"
+                                        <c:if test="${s2.index == 0 && children.transactorList.size() == 1}">selected</c:if>
+                                >${TRANSACTOR.get("VALUE")}</option>
+                            </c:forEach>
+                        </select>
+                    </c:forEach>
+                </div>
+            </c:when>
+            <c:otherwise>
+                <div class="form-group has-feedback">
+                    <label class="text-red">父流程下一步办理人:</label>
+                    <select ${fns:validField("SYS_PROCESS_SCHEDULE","SPS_STEP_PARENT_TRANSACTOR")}
+                            class="form-control select2">
+                        <option value="" selected>请选择</option>
+                        <c:forEach items="${transactorParentList}" var="TRANSACTOR" varStatus="status">
+                            <option value="${TRANSACTOR.get("KEY")}"
+                                    <c:if test="${status.index == 0 && TRANSACTOR_LIST.size() == 1}">selected</c:if>
+                            >${TRANSACTOR.get("VALUE")}</option>
+                        </c:forEach>
+                    </select>
+                </div>
+            </c:otherwise>
+        </c:choose>
+    </c:if>
     <div class="form-group has-feedback">
         <label>办理意见:</label>
         <div>
@@ -104,7 +173,7 @@
 </form>
 
 <script>
-    $("#SPS_STEP_TRANSACTOR").select2({language: "zh-CN"});
+    $("#processForm .select2").select2({language: "zh-CN"});
 
     validator.init({
         //验证表单

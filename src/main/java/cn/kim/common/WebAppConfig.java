@@ -53,9 +53,9 @@ public class WebAppConfig {
     public CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
         Map<String, CacheConfig> config = Maps.newHashMapWithExpectedSize(16);
         //shiro
-        config.put(CacheName.SHIRO_AUTHORIZATIONCACHE, new CacheConfig(3600000, 1800000));
-        config.put(CacheName.SHIRO_AUTHENTICATIONCACHE, new CacheConfig(3600000, 1800000));
-        config.put(CacheName.SHIRO_ACTIVESESSIONCACHE, new CacheConfig(3600000, 1800000));
+        config.put(CacheName.SHIRO_AUTHORIZATIONCACHE, new CacheConfig(7200000, 3600000));
+        config.put(CacheName.SHIRO_AUTHENTICATIONCACHE, new CacheConfig(7200000, 3600000));
+        config.put(CacheName.SHIRO_ACTIVESESSIONCACHE, new CacheConfig(7200000, 3600000));
         //密码锁定
         config.put(CacheName.PASSWORD_RETRY_CACHE, new CacheConfig(600000, 600000));
         //前端搜索

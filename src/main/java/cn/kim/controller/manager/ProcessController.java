@@ -4,11 +4,11 @@ import cn.kim.common.annotation.NotEmptyLogin;
 import cn.kim.common.annotation.SystemControllerLog;
 import cn.kim.common.annotation.Token;
 import cn.kim.common.annotation.Validate;
-import cn.kim.common.attr.Attribute;
 import cn.kim.common.attr.MagicValue;
+import cn.kim.common.eu.ProcessBranch;
 import cn.kim.common.eu.ProcessStatus;
-import cn.kim.common.eu.UseType;
 import cn.kim.common.eu.ProcessType;
+import cn.kim.common.eu.UseType;
 import cn.kim.entity.CustomParam;
 import cn.kim.entity.DataTablesView;
 import cn.kim.entity.ResultState;
@@ -31,8 +31,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by 余庚鑫 on 2018/5/22
@@ -71,7 +71,7 @@ public class ProcessController extends BaseController {
     public Map<String, Object> showDataGridBtn(String ID, String BUS_PROCESS, String BUS_PROCESS2) throws Exception {
         Map<String, Object> resultMap = Maps.newHashMapWithExpectedSize(1);
         //查询当前角色拥有的按钮
-        String btnTypes = processService.showDataGridProcessBtn(ID, BUS_PROCESS, BUS_PROCESS2);
+        String btnTypes = processService.showDataGridProcessBtn(ID, BUS_PROCESS, BUS_PROCESS2, "0");
         resultMap.put("html", ProcessTool.getProcessButtonListHtml(btnTypes, false));
         return resultMap;
     }
@@ -111,6 +111,8 @@ public class ProcessController extends BaseController {
      * 获取流程提交退回界面
      *
      * @param ID
+     * @param SHOW_SO_ID
+     * @param SPS_ID       流程ID
      * @param BUS_PROCESS
      * @param BUS_PROCESS2
      * @param PROCESS_TYPE
@@ -121,7 +123,7 @@ public class ProcessController extends BaseController {
     @GetMapping("/showDataGridProcess")
     @NotEmptyLogin
     @Token(save = true)
-    public String showDataGridProcess(String ID, String SHOW_SO_ID, String BUS_PROCESS, String BUS_PROCESS2, int PROCESS_TYPE, Model model) throws Exception {
+    public String showDataGridProcess(String ID, String SHOW_SO_ID, String SPS_ID, String BUS_PROCESS, String BUS_PROCESS2, int PROCESS_TYPE, Model model) throws Exception {
         try {
             //取第一个ID拿来查询流程
             String[] tableIds = ID.split(SERVICE_SPLIT);
@@ -144,11 +146,29 @@ public class ProcessController extends BaseController {
             Map<String, Object> definition = processService.selectProcessDefinition(paramMap);
             String SPD_ID = toString(definition.get("ID"));
             //查询当前流程办理步骤
-            paramMap.clear();
-            paramMap.put("SPS_TABLE_ID", tableIds[0]);
-            paramMap.put("SPD_ID", SPD_ID);
-            paramMap.put("SPS_IS_CANCEL", toString(STATUS_ERROR));
-            Map<String, Object> schedule = processService.selectProcessSchedule(paramMap);
+            Map<String, Object> schedule = null;
+            if (!isEmpty(SPS_ID)) {
+                paramMap.clear();
+                paramMap.put("ID", SPS_ID);
+                schedule = processService.selectProcessSchedule(paramMap);
+            } else {
+                paramMap.clear();
+                paramMap.put("SPS_TABLE_ID", tableIds[0]);
+                paramMap.put("SPD_ID", SPD_ID);
+                paramMap.put("SPS_IS_CANCEL", toString(STATUS_ERROR));
+                paramMap.put("SPS_PARENTID", "0");
+                schedule = processService.selectProcessSchedule(paramMap);
+            }
+
+            String SPS_PARENTID = "0";
+            if (!isEmpty(schedule)) {
+                SPS_ID = toString(schedule.get("ID"));
+
+                paramMap.clear();
+                paramMap.put("ID", schedule.get("SPS_ID"));
+                Map<String, Object> nowStep = processService.selectProcessStep(paramMap);
+                SPS_PARENTID = toString(nowStep.get("SPS_PARENTID"));
+            }
 
             //审核状态
             String SPS_AUDIT_STATUS;
@@ -179,108 +199,57 @@ public class ProcessController extends BaseController {
             paramMap.clear();
             paramMap.put("SPD_ID", SPD_ID);
             paramMap.put("SPS_PROCESS_STATUS", SPS_AUDIT_STATUS);
+            if (!isEmpty(schedule) && toInt(schedule.get("SPS_AUDIT_STATUS")) != ProcessStatus.BACK.getType()) {
+                paramMap.put("ID", schedule.get("SPS_ID"));
+            } else {
+                paramMap.put("SPS_PARENTID", SPS_PARENTID);
+            }
             Map<String, Object> step = processService.selectProcessStep(paramMap);
+
+            //获取下一步骤办理人
+            paramMap.clear();
+            paramMap.put("processType", PROCESS_TYPE);
+            paramMap.put("tableId", ID);
+            paramMap.put("definitionId", SPD_ID);
+            paramMap.put("scheduleId", SPS_ID);
+            paramMap.put("scheduleAuditStatus", SPS_AUDIT_STATUS);
+            Map<String, Object> transactorMap = processService.getProcessTransactor(paramMap);
+            Map<String, Object> nextStep = (Map<String, Object>) toMap(transactorMap.get("nextStep"));
+
+            int SPS_STEP_BRANCH = toInt(nextStep.get("SPS_STEP_BRANCH"));
+            //设置提交类型
+            model.addAttribute("SPS_STEP_BRANCH", SPS_STEP_BRANCH);
 
             //默认意见
             String DEFAULT_OPINION = "";
-
-            Map<String, Object> nextStep = null;
             //查询下一步骤
             if (PROCESS_TYPE == ProcessType.SUBMIT.getType()) {
                 //流程为提交
-                nextStep = processService.processNextStep(SPD_ID, SPS_AUDIT_STATUS);
-                if (isEmpty(nextStep)) {
-                    throw new CustomException("没有找到下一流程步骤！");
-                }
-                String SR_ID = toString(nextStep.get("SR_ID"));
-                //下一步是否为结束
-                if (toInt(nextStep.get("SPS_PROCESS_STATUS")) != ProcessStatus.COMPLETE.getType()) {
-                    //查询下一步办理人
-                    if (MagicValue.ONE.equals(toString(nextStep.get("SPS_STEP_TYPE")))) {
-                        //下一步为角色
-                        paramMap.clear();
-                        paramMap.put("ID", SR_ID);
-                        Map<String, Object> role = roleService.selectRole(paramMap);
-
-                        Map<String, Object> transactor = Maps.newHashMapWithExpectedSize(2);
-                        transactor.put("KEY", role.get("ID"));
-                        transactor.put("VALUE", role.get("SR_NAME"));
-                        transactorList.add(transactor);
-                    } else if (MagicValue.TWO.equals(toString(nextStep.get("SPS_STEP_TYPE")))) {
-                        //下一步为人员
-                        paramMap.clear();
-                        paramMap.put("ID", nextStep.get("SR_ID"));
-                        List<Map<String, Object>> operatorList = operatorService.selectOperatorByRoleId(SR_ID);
-                        operatorList.forEach(map -> {
-                            Map<String, Object> transactor = Maps.newHashMapWithExpectedSize(2);
-                            transactor.put("KEY", map.get("ID"));
-                            transactor.put("VALUE", map.get("SAI_NAME"));
-                            transactorList.add(transactor);
-                        });
-                    }
-                } else {
-                    //下一步为结束
-                    Map<String, Object> transactor = Maps.newHashMapWithExpectedSize(2);
-                    transactor.put("KEY", "0");
-                    transactor.put("VALUE", "结束");
-                    transactorList.add(transactor);
+                if (SPS_STEP_BRANCH == ProcessBranch.FIXED.getType()) {
+                    //固定
+                    transactorList = toList(transactorMap.get("transactorList"));
+                } else if (SPS_STEP_BRANCH == ProcessBranch.BRANCH.getType() || SPS_STEP_BRANCH == ProcessBranch.CONCURRENT.getType()) {
+                    //分支 并发
+                    model.addAttribute("childrenTransactorList", transactorMap.get("childrenTransactorList"));
                 }
 
 //                DEFAULT_OPINION = "通过";
                 processBtnType = ProcessType.SUBMIT.toString();
             } else if (PROCESS_TYPE == ProcessType.BACK.getType()) {
                 //查询上一步骤办理人
-                nextStep = processService.processPrevStep(SPD_ID, SPS_AUDIT_STATUS);
-                if (isEmpty(nextStep)) {
-                    throw new CustomException("没有找到下一流程步骤！");
-                }
-                //是否允许多级退回
-                if (toInt(definition.get("IS_MULTISTAGE_BACK")) == STATUS_ERROR) {
-                    //查询日志查询流程对应状态办理人
-                    paramMap.clear();
-                    paramMap.put("SPL_TABLE_ID", ID);
-                    paramMap.put("SPS_PROCESS_STATUS", nextStep.get("SPS_PROCESS_STATUS"));
-                    Map<String, Object> processLog = processService.selectProcessLog(paramMap);
-                    if (isEmpty(processLog)) {
-                        throw new CustomException("流程变动，请联系管理员！");
-                    }
-                    Map<String, Object> transactor = Maps.newHashMapWithExpectedSize(2);
-                    transactor.put("KEY", processLog.get("SPL_PROCESS_STATUS") + SERVICE_SPLIT + processLog.get("SPL_SO_ID"));
-                    transactor.put("VALUE", processLog.get("SPL_PROCESS_STATUS_NAME") + ":" + processLog.get("SPL_TRANSACTOR"));
-                    transactorList.add(transactor);
-                } else {
-                    //多级退回
-                    List<Map<String, Object>> nextSteps = processService.processPrevStepList(SPD_ID, SPS_AUDIT_STATUS);
-                    //查询步骤对应日志的办理人,只查询提交的
-                    StringBuilder SPS_PROCESS_STATUS_ARRAY = new StringBuilder();
-                    nextSteps.forEach(map -> {
-                        SPS_PROCESS_STATUS_ARRAY.append(map.get("SPS_PROCESS_STATUS") + ",");
-                    });
-                    paramMap.clear();
-                    paramMap.put("SPS_ID", schedule.get("ID"));
-                    paramMap.put("SPL_TABLE_ID", ID);
-                    paramMap.put("SPL_PROCESS_STATUS_ARRAY", TextUtil.interceptSymbol(SPS_PROCESS_STATUS_ARRAY.toString(), ","));
-                    paramMap.put("NOT_SPL_PROCESS_STATUS", "0," + schedule.get("SPS_BACK_STATUS_TRANSACTOR"));
-                    paramMap.put("SPL_TYPE", "0");
-                    paramMap.put("IS_GROUP", true);
-                    List<Map<String, Object>> processLogList = processService.selectProcessLogList(paramMap);
-                    if (isEmpty(processLogList)) {
-                        throw new CustomException("流程变动，请联系管理员！");
-                    }
-
-                    processLogList.forEach(processLog -> {
-                        Map<String, Object> transactor = Maps.newHashMapWithExpectedSize(2);
-                        transactor.put("KEY", processLog.get("SPL_PROCESS_STATUS") + SERVICE_SPLIT + processLog.get("SPL_SO_ID"));
-                        transactor.put("VALUE", processLog.get("SPL_PROCESS_STATUS_NAME") + ":" + processLog.get("SPL_TRANSACTOR"));
-                        transactorList.add(transactor);
-                    });
-                }
+                transactorList = toList(transactorMap.get("transactorList"));
 //                DEFAULT_OPINION = "退回";
                 processBtnType = ProcessType.BACK.toString();
             }
+
             //查询流程步骤
             paramMap.clear();
             paramMap.put("SPD_ID", SPD_ID);
+            if (isEmpty(schedule)) {
+                paramMap.put("SPS_PARENTID", "0");
+            } else {
+                paramMap.put("SPS_PARENTID", nextStep.get("SPS_PARENTID"));
+            }
             List<Map<String, Object>> stepList = processService.selectProcessStepList(paramMap);
             //设置流程步骤
             String stepId = toString(step.get("ID"));
@@ -302,6 +271,23 @@ public class ProcessController extends BaseController {
                 }
             });
 
+            //是否子流程全部完成 查询进入下一步的步骤
+            paramMap.clear();
+            paramMap.put("processType", PROCESS_TYPE);
+            paramMap.put("tableId", ID);
+            paramMap.put("definitionId", SPD_ID);
+            paramMap.put("scheduleId", SPS_ID);
+            paramMap.put("nextStepId", nextStepId);
+            Map<String, Object> parentProcessMap = processService.getParentProcessNextTransactor(paramMap);
+
+            boolean isSelectParent = toBoolean(parentProcessMap.get("isSelectParent"));
+            //是要提交父流程 设置参数
+            if (isSelectParent) {
+                for (Map.Entry<String, Object> entry : parentProcessMap.entrySet()) {
+                    model.addAttribute(entry.getKey(), entry.getValue());
+                }
+            }
+
             //流程步骤
             model.addAttribute("SPS_GROUP_NAME", TextUtil.interceptSymbol(stepGroupName.toString(), MagicValue.RIGHT_ARROW));
             //办理表ID
@@ -310,6 +296,8 @@ public class ProcessController extends BaseController {
             if (!isEmpty(SHOW_SO_ID)) {
                 model.addAttribute("SHOW_SO_ID", SHOW_SO_ID);
             }
+            //现流程ID
+            model.addAttribute("NOW_SCHEDULE_ID", SPS_ID);
             //下一步办理人
             model.addAttribute("TRANSACTOR_LIST", transactorList);
             //流程定义
@@ -354,6 +342,7 @@ public class ProcessController extends BaseController {
         int PROCESS_TYPE = toInt(mapParam.get("PROCESS_TYPE"));
         //流程办理ID
         String[] tableIds = toString(mapParam.get("SPS_TABLE_ID")).split(SERVICE_SPLIT);
+        String[] tableNames = toString(mapParam.get("SPS_TABLE_NAME")).split(SERVICE_SPLIT);
         //拿到大小类
         String BUS_PROCESS = toString(mapParam.get("BUS_PROCESS"));
         String BUS_PROCESS2 = toString(mapParam.get("BUS_PROCESS2"));
@@ -370,7 +359,14 @@ public class ProcessController extends BaseController {
         //错误消息
         StringBuilder errorBuilder = new StringBuilder();
         //循环提交
-        for (String tableId : tableIds) {
+        for (int i = 0; i < tableIds.length; i++) {
+            String tableId = tableIds[i];
+            String tableName = tableNames[i];
+            if (isEmpty(tableId)){
+                continue;
+            }
+
+            mapParam.put("SPS_TABLE_NAME", tableName);
             mapParam.put("SPS_TABLE_ID", tableId);
             //公平锁
             ResultState state = fairLock(tableId, () -> {
@@ -384,7 +380,6 @@ public class ProcessController extends BaseController {
             }
             //判断返回结果
             if (state.getCode() == STATUS_ERROR) {
-                String tableName = ProcessTool.selectProcessTableName(tableId, BUS_PROCESS, BUS_PROCESS2);
                 errorBuilder.append("流程:" + tableName + ",异常原因:" + state.getMessage() + ",请修改后再次尝试!<br/>");
             }
         }
@@ -437,23 +432,50 @@ public class ProcessController extends BaseController {
     @GetMapping("/log")
     @NotEmptyLogin
     public String log(String ID, String BUS_PROCESS, String BUS_PROCESS2, String SPS_ID, Model model) throws Exception {
-        if (isEmpty(SPS_ID)) {
-            Map<String, Object> mapParam = Maps.newHashMapWithExpectedSize(3);
-            mapParam.put("BUS_PROCESS", BUS_PROCESS);
-            mapParam.put("BUS_PROCESS2", BUS_PROCESS2);
-            Map<String, Object> definition = processService.selectProcessDefinition(mapParam);
-            String SPD_ID = toString(definition.get("ID"));
 
+        int SPS_STEP_BRANCH = ProcessBranch.FIXED.getType();
+
+        Map<String, Object> mapParam = Maps.newHashMapWithExpectedSize(3);
+        mapParam.put("BUS_PROCESS", BUS_PROCESS);
+        mapParam.put("BUS_PROCESS2", BUS_PROCESS2);
+        Map<String, Object> definition = processService.selectProcessDefinition(mapParam);
+        String SPD_ID = toString(definition.get("ID"));
+
+        //列表日志使用
+        if (isEmpty(SPS_ID)) {
             mapParam.clear();
             mapParam.put("SPS_TABLE_ID", ID);
             mapParam.put("SPD_ID", SPD_ID);
             mapParam.put("SPS_IS_CANCEL", toString(STATUS_ERROR));
+            mapParam.put("SPS_PARENTID", "0");
             Map<String, Object> schedule = processService.selectProcessSchedule(mapParam);
             //流程进度ID
             SPS_ID = toString(schedule.get("ID"));
         }
+
+        mapParam.clear();
+        mapParam.put("SPD_ID", SPD_ID);
+        mapParam.put("SPS_PARENTID", "0");
+        List<Map<String, Object>> stepList = processService.selectProcessStepList(mapParam);
+        for (Map<String, Object> step : stepList) {
+            SPS_STEP_BRANCH = toInt(step.get("SPS_STEP_BRANCH"), ProcessBranch.FIXED.getType());
+            if (SPS_STEP_BRANCH != ProcessBranch.FIXED.getType()) {
+                break;
+            }
+        }
+
+        mapParam.clear();
+        mapParam.put("SPS_ID", SPS_ID);
+        mapParam.put("SPL_TABLE_ID", ID);
+        Map<String, Object> log = processService.selectProcessLogList(mapParam).get(0);
+
+        //流程其他信息
+        model.addAttribute("SPS_TABLE_ID", ID);
+        model.addAttribute("SPD_ID", SPD_ID);
+        model.addAttribute("SPL_PARENTID", log.get("SPL_PARENTID"));
         //流程进度ID
         model.addAttribute("SPS_ID", SPS_ID);
+        model.addAttribute("SPS_STEP_BRANCH", SPS_STEP_BRANCH);
 
         return "admin/component/process/processLog";
     }
@@ -462,18 +484,28 @@ public class ProcessController extends BaseController {
      * 流程日志数据
      *
      * @param SPS_ID
+     * @param SPD_ID
+     * @param SPS_TABLE_ID
+     * @param SPL_PARENTID
      * @return
      * @throws Exception
      */
     @GetMapping("/log/list")
     @NotEmptyLogin
     @ResponseBody
-    public DataTablesView<?> logList(String SPS_ID) throws Exception {
+    public DataTablesView<?> logList(String SPS_ID, String SPD_ID, String SPS_TABLE_ID, String SPL_PARENTID) throws Exception {
         DataTablesView<Map<String, Object>> dataTablesView = new DataTablesView<>();
         //查询日志数据
+        List<Map<String, Object>> logList = null;
+
         Map<String, Object> mapParam = Maps.newHashMapWithExpectedSize(1);
         mapParam.put("SPS_ID", SPS_ID);
-        List<Map<String, Object>> logList = processService.selectProcessLogList(mapParam);
+        if (isEmpty(SPD_ID)) {
+            logList = processService.selectProcessLogList(mapParam);
+        } else {
+            logList = processService.selectProcessLogList(0, SPD_ID, SPS_ID, SPS_TABLE_ID, SPL_PARENTID);
+        }
+
         dataTablesView.setData(logList);
         return dataTablesView;
     }

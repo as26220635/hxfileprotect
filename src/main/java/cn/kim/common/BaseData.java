@@ -29,6 +29,7 @@ import java.util.concurrent.*;
 public abstract class BaseData {
 
     protected static final String SERVICE_SPLIT = Attribute.SERVICE_SPLIT;
+    protected static final String COMPLEX_SPLIT = Attribute.COMPLEX_SPLIT;
 
     protected static final int STATUS_SUCCESS = Attribute.STATUS_SUCCESS;
     protected static final int STATUS_ERROR = Attribute.STATUS_ERROR;
@@ -185,7 +186,6 @@ public abstract class BaseData {
     }
 
     /**
-     *
      * @param containsRole
      * @return
      */
@@ -291,6 +291,11 @@ public abstract class BaseData {
         return TextUtil.toString(str);
     }
 
+    protected String toString(Object str, String v) {
+        return TextUtil.toString(str, v);
+    }
+
+
     /**
      * html标签解析
      *
@@ -311,8 +316,18 @@ public abstract class BaseData {
         return TextUtil.listToString(list);
     }
 
+    /**
+     * 转为int
+     *
+     * @param str
+     * @return
+     */
     protected Integer toInt(Object str) {
         return TextUtil.toInt(str);
+    }
+
+    protected Integer toInt(Object str, int v) {
+        return TextUtil.toInt(str, v);
     }
 
     protected String getNumbers(String str) {
@@ -389,6 +404,7 @@ public abstract class BaseData {
 
     /**
      * 获取操作id拼接
+     *
      * @param id
      * @return
      */
@@ -413,9 +429,9 @@ public abstract class BaseData {
      * @return
      */
     protected boolean isSuccess(Map<String, Object> resultMap) {
-        if (!isEmpty(resultMap.get("status"))){
+        if (!isEmpty(resultMap.get("status"))) {
             return toString(resultMap.get("status")).equals(toString(Attribute.STATUS_SUCCESS)) ? true : false;
-        }else{
+        } else {
             return toString(resultMap.get("code")).equals(toString(Attribute.STATUS_SUCCESS)) ? true : false;
         }
     }

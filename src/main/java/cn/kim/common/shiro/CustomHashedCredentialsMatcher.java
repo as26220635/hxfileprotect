@@ -59,6 +59,7 @@ public class CustomHashedCredentialsMatcher extends HashedCredentialsMatcher {
             activeUser.setId(TextUtil.toString(user.get("ID")));
             activeUser.setUsername(TextUtil.toString(user.get("SOS_USERNAME")));
             activeUser.setUsercode(TextUtil.toString(user.get("SAI_NAME")));
+            activeUser.setAccountName(TextUtil.toString(user.get("SAI_NAME")));
             activeUser.setTableId(TextUtil.toString(user.get("SAI_TABLE_ID")));
             activeUser.setRole(TextUtil.toString(user.get("SR_NAME")));
             activeUser.setRoleIds(TextUtil.toString(user.get("SR_ID")));

@@ -139,6 +139,10 @@ public class TextUtil {
         }
     }
 
+    public static String toString(Object str, String v) {
+        return ValidateUtil.isEmpty(str) ? v : toString(str);
+    }
+
     public static String toString(String[] strs) {
         String str = "";
         for (String s : strs) {
@@ -234,6 +238,10 @@ public class TextUtil {
         }
     }
 
+    public static Integer toInt(Object integer, int v) {
+        return ValidateUtil.isEmpty(integer) ? v : toInt(integer);
+    }
+
     public static BigDecimal toBigDecimal(Object bigDecimal) {
         try {
             return ValidateUtil.isEmpty(bigDecimal) ? null : new BigDecimal(toString(bigDecimal));
@@ -278,7 +286,17 @@ public class TextUtil {
 
     public static boolean toBoolean(Object obj) {
         try {
-            return ValidateUtil.isEmpty(obj) ? false : (Boolean) obj;
+            boolean isBoolean = false;
+            if (!ValidateUtil.isEmpty(obj)) {
+                if ("true".equals(obj.toString())) {
+                    isBoolean = true;
+                } else if ("false".equals(obj.toString())) {
+                    isBoolean = false;
+                } else {
+                    isBoolean = (boolean) obj;
+                }
+            }
+            return isBoolean;
         } catch (Exception e) {
             return false;
         }

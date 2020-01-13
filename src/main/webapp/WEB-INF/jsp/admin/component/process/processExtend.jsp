@@ -27,6 +27,7 @@
 
             ajax.getHtml('${BASE_URL}${Url.PROCESS_SHOW_HOME}', {
                 ID: option.ID,
+                SPS_ID: option.SPS_ID,
                 BUS_PROCESS: option.BUS_PROCESS,
                 BUS_PROCESS2: option.BUS_PROCESS2,
                 PROCESS_TYPE: option.PROCESS_TYPE,
@@ -47,6 +48,8 @@
                         }
 
                         var params = packFormParams($form);
+                        var SPS_STEP_BRANCH = params['SPS_STEP_BRANCH'];
+                        var SPS_STEP_PARENT_BRANCH = params['SPS_STEP_PARENT_BRANCH'];
                         if (params.IS_DISCONTINUATION == '1') {
                             demo.showNotify(ALERT_WARNING, '流程已经禁用!');
                             return;
@@ -55,7 +58,56 @@
                             demo.showNotify(ALERT_WARNING, '请选择办理流程!');
                             return;
                         }
-                        
+                        //选中的标题
+                        var SPS_TABLE_ID = '';
+                        var SPS_TABLE_NAME = '';
+                        $("#SPS_TABLE_ID").find("option:selected").each(function () {
+                            var $this = $(this);
+                            SPS_TABLE_ID += $this.val() + SERVICE_SPLIT;
+                            SPS_TABLE_NAME += $this.text() + SERVICE_SPLIT;
+                        });
+                        params['SPS_TABLE_ID'] = SPS_TABLE_ID;
+                        params['SPS_TABLE_NAME'] = SPS_TABLE_NAME;
+
+                        if (!isEmpty(SPS_STEP_BRANCH)) {
+                            if (SPS_STEP_BRANCH != '${ProcessBranch.FIXED.toString()}') {
+                                var isSelect = true;
+                                var SPS_STEP_TRANSACTOR_BRANCH = '';
+                                var transactorArray = $('#processForm select[name="SPS_STEP_TRANSACTOR_BRANCH"]');
+                                transactorArray.each(function () {
+                                    var v = $(this).val();
+                                    if (v != '') {
+                                        SPS_STEP_TRANSACTOR_BRANCH += v + COMPLEX_SPLIT;
+                                    } else {
+                                        isSelect = false;
+                                    }
+                                });
+                                if (!isSelect) {
+                                    demo.showNotify(ALERT_WARNING, '请选择办理流程!');
+                                    return;
+                                }
+                                params['SPS_STEP_TRANSACTOR_BRANCH'] = SPS_STEP_TRANSACTOR_BRANCH;
+                            }
+                            if (SPS_STEP_PARENT_BRANCH != '${ProcessBranch.FIXED.toString()}') {
+                                var isSelect = true;
+                                var SPS_STEP_TRANSACTOR_PARENT_BRANCH = '';
+                                var transactorArray = $('#processForm select[name="SPS_STEP_TRANSACTOR_PARENT_BRANCH"]');
+                                transactorArray.each(function () {
+                                    var v = $(this).val();
+                                    if (v != '') {
+                                        SPS_STEP_TRANSACTOR_PARENT_BRANCH += v + COMPLEX_SPLIT;
+                                    } else {
+                                        isSelect = false;
+                                    }
+                                });
+                                if (!isSelect) {
+                                    demo.showNotify(ALERT_WARNING, '请选择父流程办理流程!');
+                                    return;
+                                }
+                                params['SPS_STEP_TRANSACTOR_PARENT_BRANCH'] = SPS_STEP_TRANSACTOR_PARENT_BRANCH;
+                            }
+                        }
+
                         //弹出确认框
                         model.confirm({
                             message: '是否' + okBtnName + '流程!',
@@ -84,6 +136,7 @@
                     if (result) {
                         ajax.put('${BASE_URL}${Url.PROCESS_WITHDRAW}', {
                             SPS_TABLE_ID: option.ID,
+                            SPS_ID: option.SPS_ID,
                             BUS_PROCESS: option.BUS_PROCESS,
                             BUS_PROCESS2: option.BUS_PROCESS2,
                         }, function (data) {

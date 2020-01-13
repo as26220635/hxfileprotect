@@ -107,7 +107,12 @@ public class ManagerServiceImpl extends BaseServiceImpl implements ManagerServic
      */
     @Override
     public List<Map<String, Object>> queryOperatorMenuTree(String operatorId) {
-        return getOperatorMenuTree(baseDao, NameSpace.ManagerMapper, "queryOperatorMenu", operatorId, "0", "-1", null, null);
+        Map<String, Object> paramMap = Maps.newHashMapWithExpectedSize(1);
+        paramMap.put("SO_ID", operatorId);
+        List<Map<String, Object>> list = baseDao.selectList(NameSpace.ManagerMapper, "queryOperatorMenu", paramMap);
+        List<Map<String, Object>> treeList = getOperatorMenuTree_New(list, operatorId, "0", "-1", null, null);
+        return treeList;
+//        return getOperatorMenuTree(baseDao, NameSpace.ManagerMapper, "queryOperatorMenu", operatorId, "0", "-1", null, null);
     }
 
     @Override

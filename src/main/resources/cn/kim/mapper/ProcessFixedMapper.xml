@@ -6,8 +6,12 @@
     <!--查询流程下一步骤-->
     <select id="selectProcessNextStep" parameterType="java.util.Map" resultType="java.util.Map">
         SELECT * FROM SYS_PROCESS_STEP
-        WHERE SPS_ORDER > (SELECT SPS_ORDER FROM SYS_PROCESS_STEP WHERE SPD_ID = #{SPD_ID} AND SPS_PROCESS_STATUS = #{SPS_PROCESS_STATUS} )
+        WHERE SPS_ORDER > (SELECT SPS_ORDER FROM SYS_PROCESS_STEP WHERE SPD_ID = #{SPD_ID} AND SPS_PROCESS_STATUS = #{SPS_PROCESS_STATUS} AND SPS_PARENTID = #{SPS_PARENTID})
         AND SPD_ID = #{SPD_ID}
+        AND SPS_PARENTID = #{SPS_PARENTID}
+        <if test="SPS_STEP_BRANCH != null and SPS_STEP_BRANCH != ''">
+            AND SPS_STEP_BRANCH = #{SPS_STEP_BRANCH}
+        </if>
         ORDER BY SPS_ORDER ASC  LIMIT 0 ,1
     </select>
 
@@ -20,6 +24,7 @@
         SELECT SPS_ORDER
         FROM SYS_PROCESS_STEP
         WHERE SPD_ID = #{SPD_ID}
+        AND SPS_PARENTID = #{SPS_PARENTID}
         <if test="SPS_PROCESS_STATUS != null and SPS_PROCESS_STATUS != ''">
             AND SPS_PROCESS_STATUS = #{SPS_PROCESS_STATUS}
         </if>
@@ -28,10 +33,35 @@
         <if test="SR_ID != null and SR_ID != ''">
             AND SR_ID = #{SR_ID}
         </if>
+        AND SPS_PARENTID = #{SPS_PARENTID}
         ORDER BY SPS_ORDER DESC
         <if test="ALL == null">
             LIMIT 0 ,1
         </if>
+    </select>
+
+    <select id="selectProcessPrevStepList" parameterType="java.util.Map" resultType="java.util.Map">
+        SELECT *
+        FROM SYS_PROCESS_STEP
+        WHERE SPS_ORDER &gt;
+        (
+            SELECT SPS_ORDER
+            FROM SYS_PROCESS_STEP
+            WHERE SPD_ID = #{SPD_ID}
+            AND SPS_PARENTID = #{SPS_PARENTID}
+            AND SPS_PROCESS_STATUS = #{START_PROCESS_STATUS}
+        )
+        AND SPS_ORDER &lt;
+        (
+            SELECT SPS_ORDER
+            FROM SYS_PROCESS_STEP
+            WHERE SPD_ID = #{SPD_ID}
+            AND SPS_PARENTID = #{SPS_PARENTID}
+            AND SPS_PROCESS_STATUS = #{END_PROCESS_STATUS}
+        )
+        AND SPD_ID = #{SPD_ID}
+        AND SPS_PARENTID = #{SPS_PARENTID}
+        ORDER BY SPS_ORDER DESC
     </select>
 
     <!--根据角色id查询最高拥有的启动角色-->
@@ -185,6 +215,9 @@
             <if test="ID != NULL and ID != ''">
                 AND ID = #{ID}
             </if>
+            <if test="SPS_PARENTID != NULL and SPS_PARENTID != ''">
+                AND SPS_PARENTID = #{SPS_PARENTID}
+            </if>
             <if test="SPD_ID != NULL and SPD_ID != ''">
                 AND SPD_ID = #{SPD_ID}
             </if>
@@ -213,6 +246,9 @@
             <if test="SPD_ID != NULL and SPD_ID != ''">
                 AND SPD_ID = #{SPD_ID}
             </if>
+            <if test="SPS_PARENTID != NULL and SPS_PARENTID != ''">
+                AND SPS_PARENTID = #{SPS_PARENTID}
+            </if>
             <if test="SPS_PROCESS_STATUS != NULL and SPS_PROCESS_STATUS != ''">
                 AND SPS_PROCESS_STATUS = #{SPS_PROCESS_STATUS}
             </if>
@@ -233,16 +269,18 @@
     <!--插入流程步骤-->
     <insert id="insertProcessStep" parameterType="java.util.Map">
         INSERT INTO SYS_PROCESS_STEP
-        <trim prefix="(" suffix=")" suffixOverrides=",">
+        <trim prefix="(" suffix=")" suffixOverrides="," >
             <if test="ID != null">ID,</if>
+            <if test="SPS_PARENTID != null">SPS_PARENTID,</if>
             <if test="SPD_ID != null">SPD_ID,</if>
             <if test="SR_ID != null">SR_ID,</if>
             <if test="SPS_NAME != null">SPS_NAME,</if>
             <if test="SPS_ORDER != null">SPS_ORDER,</if>
+            <if test="SPS_STEP_BRANCH != null">SPS_STEP_BRANCH,</if>
+            <if test="SPS_STEP_TYPE != null">SPS_STEP_TYPE,</if>
             <if test="SPS_PROCESS_STATUS != null">SPS_PROCESS_STATUS,</if>
             <if test="SPS_IS_OVER_TIME != null">SPS_IS_OVER_TIME,</if>
             <if test="SPS_OVER_TIME != null">SPS_OVER_TIME,</if>
-            <if test="SPS_STEP_TYPE != null">SPS_STEP_TYPE,</if>
             <if test="SPS_IS_EDIT != null">SPS_IS_EDIT,</if>
             <if test="SPS_TAB != null">SPS_TAB,</if>
             <if test="SPS_IS_ADVANCE_CHECK != null">SPS_IS_ADVANCE_CHECK,</if>
@@ -250,16 +288,18 @@
             <if test="SPS_IS_ADVANCE_EXECUTE != null">SPS_IS_ADVANCE_EXECUTE,</if>
             <if test="SPS_IS_RETREAT_EXECUTE != null">SPS_IS_RETREAT_EXECUTE,</if>
         </trim>
-        <trim prefix="values (" suffix=")" suffixOverrides=",">
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
             <if test="ID != null">#{ID},</if>
+            <if test="SPS_PARENTID != null">#{SPS_PARENTID},</if>
             <if test="SPD_ID != null">#{SPD_ID},</if>
             <if test="SR_ID != null">#{SR_ID},</if>
             <if test="SPS_NAME != null">#{SPS_NAME},</if>
             <if test="SPS_ORDER != null">#{SPS_ORDER},</if>
+            <if test="SPS_STEP_BRANCH != null">#{SPS_STEP_BRANCH},</if>
+            <if test="SPS_STEP_TYPE != null">#{SPS_STEP_TYPE},</if>
             <if test="SPS_PROCESS_STATUS != null">#{SPS_PROCESS_STATUS},</if>
             <if test="SPS_IS_OVER_TIME != null">#{SPS_IS_OVER_TIME},</if>
             <if test="SPS_OVER_TIME != null">#{SPS_OVER_TIME},</if>
-            <if test="SPS_STEP_TYPE != null">#{SPS_STEP_TYPE},</if>
             <if test="SPS_IS_EDIT != null">#{SPS_IS_EDIT},</if>
             <if test="SPS_TAB != null">#{SPS_TAB},</if>
             <if test="SPS_IS_ADVANCE_CHECK != null">#{SPS_IS_ADVANCE_CHECK},</if>
@@ -269,19 +309,21 @@
         </trim>
     </insert>
 
-    <!--编辑流程步骤-->
+    <!--编辑-->
     <update id="updateProcessStep" parameterType="java.util.Map">
         UPDATE SYS_PROCESS_STEP
         <set>
             <if test="ID != null">ID=#{ID},</if>
+            <if test="SPS_PARENTID != null">SPS_PARENTID=#{SPS_PARENTID},</if>
             <if test="SPD_ID != null">SPD_ID=#{SPD_ID},</if>
             <if test="SR_ID != null">SR_ID=#{SR_ID},</if>
             <if test="SPS_NAME != null">SPS_NAME=#{SPS_NAME},</if>
             <if test="SPS_ORDER != null">SPS_ORDER=#{SPS_ORDER},</if>
+            <if test="SPS_STEP_BRANCH != null">SPS_STEP_BRANCH=#{SPS_STEP_BRANCH},</if>
+            <if test="SPS_STEP_TYPE != null">SPS_STEP_TYPE=#{SPS_STEP_TYPE},</if>
             <if test="SPS_PROCESS_STATUS != null">SPS_PROCESS_STATUS=#{SPS_PROCESS_STATUS},</if>
             <if test="SPS_IS_OVER_TIME != null">SPS_IS_OVER_TIME=#{SPS_IS_OVER_TIME},</if>
             <if test="SPS_OVER_TIME != null">SPS_OVER_TIME=#{SPS_OVER_TIME},</if>
-            <if test="SPS_STEP_TYPE != null">SPS_STEP_TYPE=#{SPS_STEP_TYPE},</if>
             <if test="SPS_IS_EDIT != null">SPS_IS_EDIT=#{SPS_IS_EDIT},</if>
             <if test="SPS_TAB != null">SPS_TAB=#{SPS_TAB},</if>
             <if test="SPS_IS_ADVANCE_CHECK != null">SPS_IS_ADVANCE_CHECK=#{SPS_IS_ADVANCE_CHECK},</if>
@@ -290,7 +332,7 @@
             <if test="SPS_IS_RETREAT_EXECUTE != null">SPS_IS_RETREAT_EXECUTE=#{SPS_IS_RETREAT_EXECUTE},</if>
         </set>
         <where>
-            <if test="ID !=null">ID=#{ID}</if>
+            ID=#{ID}
         </where>
     </update>
 

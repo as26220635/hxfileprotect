@@ -5,6 +5,7 @@ import cn.kim.common.eu.ProcessType;
 import cn.kim.exception.CustomException;
 import cn.kim.service.ProcessService;
 import cn.kim.util.AuthcUtil;
+import cn.kim.util.CommonUtil;
 import cn.kim.util.TextUtil;
 import cn.kim.util.ValidateUtil;
 import com.google.common.collect.Maps;
@@ -16,10 +17,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.security.InvalidKeyException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static cn.kim.common.attr.Attribute.COMPLEX_SPLIT;
 
 /**
  * Created by 余庚鑫 on 2018/6/11
@@ -52,7 +57,7 @@ public class ProcessTool {
      * @return
      */
     public static Set<String> showDataGridProcessBtn(String id, String busProcess, String busProcess2) throws Exception {
-        return Sets.newHashSet(processTool.processService.showDataGridProcessBtn(id, busProcess, busProcess2).split(Attribute.SERVICE_SPLIT));
+        return Sets.newHashSet(processTool.processService.showDataGridProcessBtn(id, busProcess, busProcess2, "0").split(Attribute.SERVICE_SPLIT));
     }
 
     /**
@@ -79,11 +84,20 @@ public class ProcessTool {
      * @param isTop    是否顶部按钮
      * @return
      */
-    public static String getProcessButtonListHtml(String btnTypes, boolean isTop) {
+    public static String getProcessButtonListHtml(String btnTypes, boolean isTop) throws InvalidKeyException {
         StringBuilder builder = new StringBuilder();
         if (!ValidateUtil.isEmpty(btnTypes)) {
-            for (String btnType : btnTypes.split(Attribute.SERVICE_SPLIT)) {
-                builder.append(getProcessButtonHtml(TextUtil.toInt(btnType), isTop));
+            //去重
+            Set<String> btnTypeSet = Sets.newLinkedHashSet(Arrays.asList(btnTypes.split(Attribute.SERVICE_SPLIT)));
+            for (String btnTypeJoin : btnTypeSet) {
+                if (!ValidateUtil.isEmpty(btnTypeJoin)){
+                    if (btnTypeJoin.contains(Attribute.COMPLEX_SPLIT)) {
+                        String[] btnTypeArray = btnTypeJoin.split(Attribute.COMPLEX_SPLIT);
+                        builder.append(getProcessButtonHtml(TextUtil.toInt(btnTypeArray[0]), btnTypeArray[1], isTop));
+                    } else {
+                        builder.append(getProcessButtonHtml(TextUtil.toInt(btnTypeJoin), null, isTop));
+                    }
+                }
             }
         }
         return builder.toString();
@@ -96,14 +110,14 @@ public class ProcessTool {
      * @param isTop   是否顶部按钮
      * @return
      */
-    public static String getProcessButtonHtml(int btnType, boolean isTop) {
+    public static String getProcessButtonHtml(int btnType, String SPS_ID, boolean isTop) throws InvalidKeyException {
         String cls = !isTop ? "btn-xs" : "";
         if (btnType == ProcessType.SUBMIT.getType()) {
-            return "<button type='button' class='btn btn-info " + cls + "' id='PROCESS_SUBMIT'><i class='mdi mdi-arrow-up-thick'></i>提交</button>";
+            return "<button type='button' class='btn btn-info " + cls + "' data-schedule='" + (SPS_ID != null ? TextUtil.toString(CommonUtil.idEncrypt(SPS_ID)) : "") + "' id='PROCESS_SUBMIT'><i class='mdi mdi-arrow-up-thick'></i>提交</button>";
         } else if (btnType == ProcessType.BACK.getType()) {
-            return "<button type='button' class='btn btn-danger " + cls + "' id='PROCESS_BACK'><i class='mdi mdi-arrow-down-thick'></i>退回</button>";
+            return "<button type='button' class='btn btn-danger " + cls + "' data-schedule='" + (SPS_ID != null ? TextUtil.toString(CommonUtil.idEncrypt(SPS_ID)) : "") + "' id='PROCESS_BACK'><i class='mdi mdi-arrow-down-thick'></i>退回</button>";
         } else if (btnType == ProcessType.WITHDRAW.getType()) {
-            return "<button type='button' class='btn btn-danger " + cls + "' id='PROCESS_WITHDRAW'><i class='mdi mdi-arrow-down-thick'></i>撤回</button>";
+            return "<button type='button' class='btn btn-danger " + cls + "' data-schedule='" + (SPS_ID != null ? TextUtil.toString(CommonUtil.idEncrypt(SPS_ID)) : "") + "' id='PROCESS_WITHDRAW'><i class='mdi mdi-arrow-down-thick'></i>撤回</button>";
         }
         return "";
     }
@@ -126,6 +140,7 @@ public class ProcessTool {
             paramMap.clear();
             paramMap.put("SPS_TABLE_ID", tableIds[i]);
             paramMap.put("SPS_IS_CANCEL", TextUtil.toString(Attribute.STATUS_ERROR));
+            paramMap.put("SPS_PARENTID", "0");
             Map<String, Object> schedule = processTool.processService.selectProcessSchedule(paramMap);
 
             if (i > 0) {
@@ -167,9 +182,22 @@ public class ProcessTool {
         boolean isCheck = true;
 
         //判断当前是否拥有审核权限
-        Set<String> processBtn = new HashSet(Arrays.asList(processTool.processService.showDataGridProcessBtn(SPS_TABLE_ID, BUS_PROCESS, BUS_PROCESS2).split(Attribute.SERVICE_SPLIT)));
+        Set<String> processBtn = Sets.newHashSet(Arrays.asList(processTool.processService.showDataGridProcessBtn(SPS_TABLE_ID, BUS_PROCESS, BUS_PROCESS2, "0").split(Attribute.SERVICE_SPLIT)));
         if (ValidateUtil.isEmpty(processBtn)) {
             isCheck = false;
+        }
+        //是否子流程
+        boolean isComplex = false;
+        for (String s : processBtn) {
+            if (!ValidateUtil.isEmpty(s)){
+                if (s.contains(COMPLEX_SPLIT)) {
+                    isComplex = true;
+                    break;
+                }
+            }
+        }
+        if (isComplex) {
+            processBtn = processBtn.stream().map(s -> s.split(COMPLEX_SPLIT)[0]).collect(Collectors.toSet());
         }
 
         if (PROCESS_TYPE == ProcessType.SUBMIT.getType()) {
@@ -277,7 +305,7 @@ public class ProcessTool {
     public static Map<String, Object> cancelProcess(String scheduleId, String cancelReason) {
         Map<String, Object> mapParam = Maps.newHashMapWithExpectedSize(2);
         mapParam.put("ID", scheduleId);
-        mapParam.put("SPSC_REASON", scheduleId);
+        mapParam.put("SPSC_REASON", cancelReason);
 
         log.info("作废流程,参数:" + TextUtil.toString(mapParam));
         return processTool.processService.cancelProcessSchedule(mapParam);

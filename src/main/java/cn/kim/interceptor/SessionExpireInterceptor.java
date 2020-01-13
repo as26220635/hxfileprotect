@@ -21,13 +21,10 @@ public class SessionExpireInterceptor extends HandlerInterceptorAdapter {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         //未登录
         if (AuthcUtil.getCurrentUser() == null) {
-            //如果是ajax请求响应头会有，x-requested-with
-            if (request.getHeader("x-requested-with") != null && "XMLHttpRequest".equalsIgnoreCase(request.getHeader("x-requested-with"))) {
-                //在响应头设置session状态
-                response.setHeader("sessionstatus", "timeout");
-                //session超时，ajax访问返回false
-                return false;
-            }
+            //在响应头设置session状态
+            response.setHeader("sessionstatus", "timeout");
+            //session超时，ajax访问返回false
+            return false;
         } else {
             SessionUtil.set(Constants.SESSION_SERVLET_PATH, request.getServletPath());
         }

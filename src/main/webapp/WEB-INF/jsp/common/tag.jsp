@@ -10,6 +10,7 @@
 <%@ page import="cn.kim.common.eu.SystemEnum" %>
 <%@ page import="cn.kim.common.eu.ProcessStatus" %>
 <%@ page import="cn.kim.common.eu.ProcessType" %>
+<%@ page import="cn.kim.common.eu.ProcessBranch" %>
 <%@ page import="cn.kim.common.tag.FileInput" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>

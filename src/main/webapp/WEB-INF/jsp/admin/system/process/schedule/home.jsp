@@ -26,6 +26,11 @@
     $dataGridTable.find('tbody').on('click', '#cancel', function () {
         var data = getRowData(this);
         var id = data.ID;
+        var IS_CHILDREN = data.IS_CHILDREN;
+        if (IS_CHILDREN == '是') {
+            demo.showNotify(ALERT_WARNING, '子流程无法单独作废!');
+            return;
+        }
 
         ajax.getHtml('${BASE_URL}${Url.PROCESS_SCHEDULE_BASE_URL}/' + id, {}, function (html) {
                 model.show({
@@ -71,9 +76,17 @@
     $dataGridTable.find('tbody').on('click', '#PROCESS_LOG', function () {
         var data = getRowData(this);
         var ID = data.ID;
+        var SPS_PARENTID = data.SPS_PARENTID;
+        var SPS_TABLE_ID = data.SPS_TABLE_ID;
+        var BUS_PROCESS = data.BUS_PROCESS;
+        var BUS_PROCESS2 = data.BUS_PROCESS2;
 
         process.processLog({
             SPS_ID: ID,
+            ID: SPS_TABLE_ID,
+            SPS_TABLE_ID: SPS_TABLE_ID,
+            BUS_PROCESS: BUS_PROCESS,
+            BUS_PROCESS2: BUS_PROCESS2,
         });
     });
 </script>

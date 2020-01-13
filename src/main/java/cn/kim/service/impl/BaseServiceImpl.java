@@ -27,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -121,6 +122,66 @@ public abstract class BaseServiceImpl extends BaseData implements BaseService {
     }
 
     /**
+     * 直接递归菜单
+     *
+     * @param dataList
+     * @param operatorId
+     * @param menuParentId
+     * @param selectId
+     * @param notParentId
+     * @param roleMenus
+     * @return
+     */
+    public List<Map<String, Object>> getOperatorMenuTree_New(List<Map<String, Object>> dataList, String operatorId, String menuParentId, String selectId, String notParentId, Map<String, String> roleMenus) {
+        List<Map<String, Object>> trees = Lists.newArrayList();
+        if (!isEmpty(notParentId) && menuParentId.equals(notParentId)) {
+            return trees;
+        }
+
+        Map<String, Object> paramMap = Maps.newHashMapWithExpectedSize(2);
+        //分类
+        Iterator<Map<String, Object>> iterator = dataList.iterator();
+        while (iterator.hasNext()) {
+            Map<String, Object> menu = iterator.next();
+            if (toString(menu.get("SM_PARENTID")).equals(menuParentId)) {
+
+                String id = toString(menu.get("ID"));
+                //选中菜单
+                menu.put("IS_HAVE", false);
+                if (!isEmpty(selectId)) {
+                    if (id.equals(selectId)) {
+                        menu.put("IS_HAVE", true);
+                    }
+                }
+                if (!isEmpty(roleMenus)) {
+                    if (roleMenus.containsKey(id)) {
+                        menu.put("IS_HAVE", true);
+                    }
+                }
+                //连接url
+                String menuUrl = toString(menu.get("SM_URL"));
+                String menuUrlParams = toString(menu.get("SM_URL_PARAMS"));
+
+                menu.put("SM_URL", CommonUtil.getMenuUrlJoin(toString(menu.get("ID")), menuUrl, menuUrlParams));
+                trees.add(menu);
+
+                iterator.remove();
+            }
+        }
+        if (!ValidateUtil.isEmpty(trees)) {
+            for (Map<String, Object> tree : trees) {
+                //遇到不是叶节点的 直接return;
+                if ("-1".equals(selectId) && toInt(tree.get("SM_IS_LEAF")) == STATUS_ERROR) {
+                    continue;
+                }
+                tree.put("CHILDREN_MENU", getOperatorMenuTree_New(dataList, operatorId, toString(tree.get("ID")), selectId, notParentId, roleMenus));
+            }
+        }
+
+        return trees;
+    }
+
+    /**
      * 递归菜单
      *
      * @param operatorId
@@ -130,7 +191,7 @@ public abstract class BaseServiceImpl extends BaseData implements BaseService {
      * @param roleMenus    当前角色拥有的菜单
      * @return
      */
-    public List<Map<String, Object>> getOperatorMenuTree(BaseDao baseDao, NameSpace nameSpace, String sqlId, String operatorId, String menuParentId, @Nullable String selectId, @Nullable String notParentId, @Nullable Map<String, String> roleMenus) {
+    public List<Map<String, Object>> getOperatorMenuTree(BaseDao baseDao, NameSpace nameSpace, String sqlId, String operatorId, String menuParentId, String selectId, String notParentId, Map<String, String> roleMenus) {
         List<Map<String, Object>> trees = Lists.newArrayList();
         if (!isEmpty(notParentId) && menuParentId.equals(notParentId)) {
             return trees;
@@ -489,6 +550,17 @@ public abstract class BaseServiceImpl extends BaseData implements BaseService {
         return true;
     }
 
+    /**
+     * 根据角色ID查询角色
+     *
+     * @param roleCode
+     * @return
+     */
+    protected Map<String, Object> selectRoleById(Object id) {
+        Map<String, Object> paramMap = Maps.newHashMapWithExpectedSize(1);
+        paramMap.put("ID", id);
+        return baseDao.selectOne(NameSpace.RoleMapper, "selectRole", paramMap);
+    }
 
     /**
      * 根据角色编码查询角色
@@ -618,7 +690,7 @@ public abstract class BaseServiceImpl extends BaseData implements BaseService {
                     //已审语句
                     alreadyBuilder.append("SELECT SV.ID AS SPS_TABLE_ID FROM " + toString(configure.get("SC_VIEW")) + " SV " +
                             "   LEFT JOIN SYS_PROCESS_SCHEDULE SPS ON SPS.SPS_TABLE_ID = SV.ID AND SPS.SPS_IS_CANCEL = 0" +
-                            "   WHERE  SPS_PROCESS_OPERATOR LIKE '" + getOperatorJoin(operatorId) + "%'");
+                            "   WHERE  SPS_PROCESS_OPERATOR LIKE '%" + getOperatorJoin(operatorId) + "%'");
                     //条件语句
                     if (ProcessShowStatus.ALL.toString().equals(processStatus)) {
                         processWhereBuilder.append(" AND (DG.ID IN(");
@@ -633,17 +705,17 @@ public abstract class BaseServiceImpl extends BaseData implements BaseService {
                         processWhereBuilder.append(stayBuilder);
                         processWhereBuilder.append(")) ");
                         //排除已审
-                        processWhereBuilder.append(" AND (DG.ID NOT IN(");
-                        processWhereBuilder.append(alreadyBuilder);
-                        processWhereBuilder.append("))");
+//                        processWhereBuilder.append(" AND (DG.ID NOT IN(");
+//                        processWhereBuilder.append(alreadyBuilder);
+//                        processWhereBuilder.append("))");
                     } else if (ProcessShowStatus.ALREADY.toString().equals(processStatus)) {
                         processWhereBuilder.append(" AND (DG.ID IN(");
                         processWhereBuilder.append(alreadyBuilder);
                         processWhereBuilder.append("))");
                         //排除待审
-                        processWhereBuilder.append(" AND (DG.ID NOT IN(");
-                        processWhereBuilder.append(stayBuilder);
-                        processWhereBuilder.append("))");
+//                        processWhereBuilder.append(" AND (DG.ID NOT IN(");
+//                        processWhereBuilder.append(stayBuilder);
+//                        processWhereBuilder.append("))");
                     }
 
                     //设置条件

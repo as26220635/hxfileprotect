@@ -32,6 +32,10 @@ public class ProcessRunBean {
      */
     private String busTableId;
     /**
+     * 步骤
+     */
+    private String stepTab;
+    /**
      * 额外参数
      */
     private Map<String, Object> executeMap;

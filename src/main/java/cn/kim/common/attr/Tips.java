@@ -36,4 +36,10 @@ public class Tips {
      */
     public static final String LOG_SUCCESS = "成功";
     public static final String LOG_ERROR = "失败";
+    /**
+     * 启动流程
+     */
+    public static final String PROCESS_START = "启动流程(系统)";
+
+    public static final String PROCESS_BRANCH_END = "分支审核通过(系统)";
 }

@@ -29,14 +29,9 @@ public class TableViewName {
      * 数据日志
      */
     public static final String V_LOG_VALUE_RECORD_DETAIL = "v_log_value_record_detail";
-
     /**
-     * 微信用户
+     * 流程步骤
      */
-    public static final String V_WECHAT = "v_wechat";
+    public static final String V_PROCESS_STEP = "v_process_step";
 
-    /**
-     * 成就墙
-     */
-    public static final String V_ACHIEVEMENT = "v_achievement";
 }

@@ -5,6 +5,7 @@ import cn.kim.exception.CustomException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by 余庚鑫 on 2018/6/5
@@ -29,25 +30,28 @@ public interface ProcessService extends BaseService {
      * @param process2
      * @return
      */
-    String showDataGridProcessBtn(String id, String process, String process2) throws Exception;
+    String showDataGridProcessBtn(String id, String process, String process2, String SPS_PARENTID) throws Exception;
 
     /**
      * 获取当前项目的下一步步骤
      *
-     * @param definitionId        流程定义ID
-     * @param scheduleAuditStatus 流程办理状态
+     * @param isSkipBranch
+     * @param definitionId
+     * @param scheduleAuditStatus
+     * @param stepParentId
      * @return
      */
-    Map<String, Object> processNextStep(String definitionId, String scheduleAuditStatus);
+    Map<String, Object> processNextStep(boolean isSkipBranch, String definitionId, String scheduleAuditStatus, String stepParentId);
 
     /**
      * 获取当前项目的上一步步骤
      *
      * @param definitionId        流程定义ID
      * @param scheduleAuditStatus 流程办理状态
+     * @param stepParentId
      * @return
      */
-    Map<String, Object> processPrevStep(String definitionId, String scheduleAuditStatus);
+    Map<String, Object> processPrevStep(String definitionId, String scheduleAuditStatus, String stepParentId);
 
     /**
      * 获取当前项目的之前全部步骤
@@ -56,7 +60,7 @@ public interface ProcessService extends BaseService {
      * @param scheduleAuditStatus
      * @return
      */
-    List<Map<String, Object>> processPrevStepList(String definitionId, String scheduleAuditStatus);
+    List<Map<String, Object>> processPrevStepList(String definitionId, String scheduleAuditStatus, String stepParentId);
 
     /**
      * 根据当前角色ids查询流程定义最高的启动角色
@@ -83,6 +87,23 @@ public interface ProcessService extends BaseService {
      */
     Map<String, Object> processWithdraw(Map<String, Object> mapParam);
 
+    /**
+     * 获取下一步办理人
+     *
+     * @param mapParam
+     * @return
+     * @throws Exception
+     */
+    Map<String, Object> getProcessTransactor(Map<String, Object> mapParam) throws Exception;
+
+    /**
+     * 获取子流程办理完成下一步选择人
+     *
+     * @param mapParam
+     * @return
+     * @throws Exception
+     */
+    Map<String, Object> getParentProcessNextTransactor(Map<String, Object> mapParam) throws Exception;
     /****   流程定义    ***/
 
     /**
@@ -116,6 +137,7 @@ public interface ProcessService extends BaseService {
 
     /**
      * 是否拥有随时编辑
+     *
      * @param roleId
      * @param busProcess
      * @param busProcess2
@@ -158,6 +180,18 @@ public interface ProcessService extends BaseService {
     Map<String, Object> selectProcessLog(Map<String, Object> mapParam);
 
     List<Map<String, Object>> selectProcessLogList(Map<String, Object> mapParam);
+
+    /**
+     * 查看日志
+     *
+     * @param level
+     * @param definitionId
+     * @param scheduleId
+     * @param tableId
+     * @param logParentId
+     * @return
+     */
+    List<Map<String, Object>> selectProcessLogList(int level, String definitionId, String scheduleId, String tableId, String logParentId);
 
     Map<String, Object> insertProcessLog(Map<String, Object> mapParam);
 

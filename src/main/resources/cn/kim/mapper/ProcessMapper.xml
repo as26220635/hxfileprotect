@@ -11,24 +11,33 @@
     <select id="selectProcessSchedule" parameterType="java.util.Map" resultType="java.util.Map">
         SELECT SPS.*
         FROM(
-            SELECT * FROM SYS_PROCESS_SCHEDULE
-            <where>
-                <if test="ID != NULL and ID != ''">
-                    AND ID = #{ID}
-                </if>
-                <if test="SPS_TABLE_ID != NULL and SPS_TABLE_ID != ''">
-                    AND SPS_TABLE_ID = #{SPS_TABLE_ID}
-                </if>
-                <if test="SPS_TABLE_NAME != NULL and SPS_TABLE_NAME != ''">
-                    AND SPS_TABLE_NAME = #{SPS_TABLE_NAME}
-                </if>
-                <if test="SPD_ID != NULL and SPD_ID != ''">
-                    AND SPD_ID = #{SPD_ID}
-                </if>
-                <if test="SPS_IS_CANCEL != NULL and SPS_IS_CANCEL != ''">
-                    AND SPS_IS_CANCEL = #{SPS_IS_CANCEL}
-                </if>
-            </where>
+        SELECT * FROM SYS_PROCESS_SCHEDULE
+        <where>
+            <if test="ID != NULL and ID != ''">
+                AND ID = #{ID}
+            </if>
+            <if test="NOT_ID != NULL and NOT_ID != ''">
+                AND ID != #{NOT_ID}
+            </if>
+            <if test="SPS_PARENTID != NULL and SPS_PARENTID != ''">
+                AND SPS_PARENTID = #{SPS_PARENTID}
+            </if>
+            <if test="SPS_TABLE_ID != NULL and SPS_TABLE_ID != ''">
+                AND SPS_TABLE_ID = #{SPS_TABLE_ID}
+            </if>
+            <if test="SPS_TABLE_NAME != NULL and SPS_TABLE_NAME != ''">
+                AND SPS_TABLE_NAME = #{SPS_TABLE_NAME}
+            </if>
+            <if test="SPD_ID != NULL and SPD_ID != ''">
+                AND SPD_ID = #{SPD_ID}
+            </if>
+            <if test="SPS_ID != NULL and SPS_ID != ''">
+                AND SPS_ID = #{SPS_ID}
+            </if>
+            <if test="SPS_IS_CANCEL != NULL and SPS_IS_CANCEL != ''">
+                AND SPS_IS_CANCEL = #{SPS_IS_CANCEL}
+            </if>
+        </where>
         )SPS
         INNER JOIN SYS_PROCESS_DEFINITION SPD ON SPD.ID = SPS.SPD_ID
         <where>
@@ -44,8 +53,9 @@
     <!--插入-->
     <insert id="insertProcessSchedule" parameterType="java.util.Map">
         INSERT INTO SYS_PROCESS_SCHEDULE
-        <trim prefix="(" suffix=")" suffixOverrides="," >
+        <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="ID != null">ID,</if>
+            <if test="SPS_PARENTID != null">SPS_PARENTID,</if>
             <if test="SO_ID != null">SO_ID,</if>
             <if test="SHOW_SO_ID != null">SHOW_SO_ID,</if>
             <if test="SPD_ID != null">SPD_ID,</if>
@@ -64,8 +74,9 @@
             <if test="SPS_IS_CANCEL != null">SPS_IS_CANCEL,</if>
             <if test="SPS_PROCESS_OPERATOR != null">SPS_PROCESS_OPERATOR,</if>
         </trim>
-        <trim prefix="values (" suffix=")" suffixOverrides="," >
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="ID != null">#{ID},</if>
+            <if test="SPS_PARENTID != null">#{SPS_PARENTID},</if>
             <if test="SO_ID != null">#{SO_ID},</if>
             <if test="SHOW_SO_ID != null">#{SHOW_SO_ID},</if>
             <if test="SPD_ID != null">#{SPD_ID},</if>
@@ -91,6 +102,7 @@
         UPDATE SYS_PROCESS_SCHEDULE
         <set>
             <if test="ID != null">ID=#{ID},</if>
+            <if test="SPS_PARENTID != null">SPS_PARENTID=#{SPS_PARENTID},</if>
             <if test="SO_ID != null">SO_ID=#{SO_ID},</if>
             <if test="SHOW_SO_ID != null">SHOW_SO_ID=#{SHOW_SO_ID},</if>
             <if test="SPD_ID != null">SPD_ID=#{SPD_ID},</if>
@@ -128,14 +140,32 @@
             <if test="ID != NULL and ID != ''">
                 AND ID = #{ID}
             </if>
+            <if test="SPD_ID != NULL and SPD_ID != ''">
+                AND SPD_ID = #{SPD_ID}
+            </if>
             <if test="SPS_ID != NULL and SPS_ID != ''">
                 AND SPS_ID = #{SPS_ID}
+            </if>
+            <if test="SPL_PARENTID != NULL and SPL_PARENTID != ''">
+                AND SPL_PARENTID = #{SPL_PARENTID}
+            </if>
+            <if test="SPL_STEP_ID != NULL and SPL_STEP_ID != ''">
+                AND SPL_STEP_ID = #{SPL_STEP_ID}
             </if>
             <if test="SPL_TABLE_ID != NULL and SPL_TABLE_ID != ''">
                 AND SPL_TABLE_ID = #{SPL_TABLE_ID}
             </if>
             <if test="SPL_TYPE != NULL and SPL_TYPE != ''">
                 AND SPL_TYPE = #{SPL_TYPE}
+            </if>
+            <if test="SPL_STEP_BRANCH != NULL and SPL_STEP_BRANCH != ''">
+                AND SPL_STEP_BRANCH = #{SPL_STEP_BRANCH}
+            </if>
+            <if test="SPL_STATUS != NULL and SPL_STATUS != ''">
+                AND SPL_STATUS = #{SPL_STATUS}
+            </if>
+            <if test="SPL_IS_DEFAULT != NULL and SPL_IS_DEFAULT != ''">
+                AND SPL_IS_DEFAULT = #{SPL_IS_DEFAULT}
             </if>
             <if test="NOT_SPL_PROCESS_STATUS != NULL and NOT_SPL_PROCESS_STATUS != ''">
                 AND SPL_PROCESS_STATUS NOT IN(${NOT_SPL_PROCESS_STATUS})
@@ -145,78 +175,120 @@
         LEFT JOIN SYS_DICT_INFO SDI ON SDI.SDT_CODE = 'SYS_PROCESS_STATUS' AND SDI.SDI_CODE = SPL.SPL_PROCESS_STATUS
         <where>
             <if test="SPL_PROCESS_STATUS != NULL and SPL_PROCESS_STATUS != ''">
-                AND SPS.SPL_PROCESS_STATUS = #{SPL_PROCESS_STATUS}
+                AND SPL.SPL_PROCESS_STATUS = #{SPL_PROCESS_STATUS}
             </if>
             <if test="SPL_PROCESS_STATUS_ARRAY != NULL and SPL_PROCESS_STATUS_ARRAY != ''">
-                AND SPS.SPL_PROCESS_STATUS IN( ${SPL_PROCESS_STATUS_ARRAY} )
+                AND SPL.SPL_PROCESS_STATUS IN( ${SPL_PROCESS_STATUS_ARRAY} )
             </if>
         </where>
         <if test="IS_GROUP != NULL and IS_GROUP != ''">
-            GROUP BY SPL_SO_ID,SPL_PROCESS_STATUS
+            GROUP BY SPL.SPL_SO_ID,SPL.SPL_PROCESS_STATUS
+        </if>
+        <if test="LOG_ORDER != NULL and LOG_ORDER != ''">
+            ORDER BY SPL.SPL_WAIT_TIME ASC,CONVERT(SPL.ID,SIGNED) ASC
+        </if>
+        <if test="LOG_CHILDREN_ORDER != NULL and LOG_CHILDREN_ORDER != ''">
+            ORDER BY SPL.SPL_STEP_TAB ASC,SPL.SPL_WAIT_TIME ASC,CONVERT(SPL.ID,SIGNED) ASC
         </if>
     </select>
 
     <!--插入流程日志-->
     <insert id="insertProcessLog" parameterType="java.util.Map">
         INSERT INTO SYS_PROCESS_LOG
-        <trim prefix="(" suffix=")" suffixOverrides=",">
+        <trim prefix="(" suffix=")" suffixOverrides="," >
             <if test="ID != null">ID,</if>
+            <if test="SPL_PARENTID != null">SPL_PARENTID,</if>
+            <if test="SPD_ID != null">SPD_ID,</if>
             <if test="SPS_ID != null">SPS_ID,</if>
+            <if test="SPL_STEP_ID != null">SPL_STEP_ID,</if>
+            <if test="SPL_STEP_TAB != null">SPL_STEP_TAB,</if>
             <if test="SPL_TABLE_ID != null">SPL_TABLE_ID,</if>
+            <if test="SPL_STEP_BRANCH != null">SPL_STEP_BRANCH,</if>
+            <if test="SPL_WAIT_STEP_TYPE != null">SPL_WAIT_STEP_TYPE,</if>
+            <if test="SPL_WAIT_ID != null">SPL_WAIT_ID,</if>
+            <if test="SPL_WAIT_TRANSACTOR != null">SPL_WAIT_TRANSACTOR,</if>
+            <if test="SPL_WAIT_TIME != null">SPL_WAIT_TIME,</if>
             <if test="SPL_SO_ID != null">SPL_SO_ID,</if>
+            <if test="SPL_PROCESS_STATUS != null">SPL_PROCESS_STATUS,</if>
             <if test="SPL_TRANSACTOR != null">SPL_TRANSACTOR,</if>
             <if test="SPL_OPINION != null">SPL_OPINION,</if>
             <if test="SPL_ENTRY_TIME != null">SPL_ENTRY_TIME,</if>
             <if test="SPL_TYPE != null">SPL_TYPE,</if>
-            <if test="SPL_PROCESS_STATUS != null">SPL_PROCESS_STATUS,</if>
+            <if test="SPL_STATUS != null">SPL_STATUS,</if>
+            <if test="SPL_IS_DEFAULT != null">SPL_IS_DEFAULT,</if>
         </trim>
-        <trim prefix="values (" suffix=")" suffixOverrides=",">
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
             <if test="ID != null">#{ID},</if>
+            <if test="SPL_PARENTID != null">#{SPL_PARENTID},</if>
+            <if test="SPD_ID != null">#{SPD_ID},</if>
             <if test="SPS_ID != null">#{SPS_ID},</if>
+            <if test="SPL_STEP_ID != null">#{SPL_STEP_ID},</if>
+            <if test="SPL_STEP_TAB != null">#{SPL_STEP_TAB},</if>
             <if test="SPL_TABLE_ID != null">#{SPL_TABLE_ID},</if>
+            <if test="SPL_STEP_BRANCH != null">#{SPL_STEP_BRANCH},</if>
+            <if test="SPL_WAIT_STEP_TYPE != null">#{SPL_WAIT_STEP_TYPE},</if>
+            <if test="SPL_WAIT_ID != null">#{SPL_WAIT_ID},</if>
+            <if test="SPL_WAIT_TRANSACTOR != null">#{SPL_WAIT_TRANSACTOR},</if>
+            <if test="SPL_WAIT_TIME != null">#{SPL_WAIT_TIME},</if>
             <if test="SPL_SO_ID != null">#{SPL_SO_ID},</if>
+            <if test="SPL_PROCESS_STATUS != null">#{SPL_PROCESS_STATUS},</if>
             <if test="SPL_TRANSACTOR != null">#{SPL_TRANSACTOR},</if>
             <if test="SPL_OPINION != null">#{SPL_OPINION},</if>
             <if test="SPL_ENTRY_TIME != null">#{SPL_ENTRY_TIME},</if>
             <if test="SPL_TYPE != null">#{SPL_TYPE},</if>
-            <if test="SPL_PROCESS_STATUS != null">#{SPL_PROCESS_STATUS},</if>
+            <if test="SPL_STATUS != null">#{SPL_STATUS},</if>
+            <if test="SPL_IS_DEFAULT != null">#{SPL_IS_DEFAULT},</if>
         </trim>
     </insert>
 
-    <!--编辑流程日志-->
+    <!--编辑-->
     <update id="updateProcessLog" parameterType="java.util.Map">
         UPDATE SYS_PROCESS_LOG
         <set>
             <if test="ID != null">ID=#{ID},</if>
+            <if test="SPL_PARENTID != null">SPL_PARENTID=#{SPL_PARENTID},</if>
+            <if test="SPD_ID != null">SPD_ID=#{SPD_ID},</if>
             <if test="SPS_ID != null">SPS_ID=#{SPS_ID},</if>
+            <if test="SPL_STEP_ID != null">SPL_STEP_ID=#{SPL_STEP_ID},</if>
+            <if test="SPL_STEP_TAB != null">SPL_STEP_TAB=#{SPL_STEP_TAB},</if>
             <if test="SPL_TABLE_ID != null">SPL_TABLE_ID=#{SPL_TABLE_ID},</if>
+            <if test="SPL_STEP_BRANCH != null">SPL_STEP_BRANCH=#{SPL_STEP_BRANCH},</if>
+            <if test="SPL_WAIT_STEP_TYPE != null">SPL_WAIT_STEP_TYPE=#{SPL_WAIT_STEP_TYPE},</if>
+            <if test="SPL_WAIT_ID != null">SPL_WAIT_ID=#{SPL_WAIT_ID},</if>
+            <if test="SPL_WAIT_TRANSACTOR != null">SPL_WAIT_TRANSACTOR=#{SPL_WAIT_TRANSACTOR},</if>
+            <if test="SPL_WAIT_TIME != null">SPL_WAIT_TIME=#{SPL_WAIT_TIME},</if>
             <if test="SPL_SO_ID != null">SPL_SO_ID=#{SPL_SO_ID},</if>
+            <if test="SPL_PROCESS_STATUS != null">SPL_PROCESS_STATUS=#{SPL_PROCESS_STATUS},</if>
             <if test="SPL_TRANSACTOR != null">SPL_TRANSACTOR=#{SPL_TRANSACTOR},</if>
             <if test="SPL_OPINION != null">SPL_OPINION=#{SPL_OPINION},</if>
             <if test="SPL_ENTRY_TIME != null">SPL_ENTRY_TIME=#{SPL_ENTRY_TIME},</if>
             <if test="SPL_TYPE != null">SPL_TYPE=#{SPL_TYPE},</if>
-            <if test="SPL_PROCESS_STATUS != null">SPL_PROCESS_STATUS=#{SPL_PROCESS_STATUS},</if>
+            <if test="SPL_STATUS != null">SPL_STATUS=#{SPL_STATUS},</if>
+            <if test="SPL_IS_DEFAULT != null">SPL_IS_DEFAULT=#{SPL_IS_DEFAULT},</if>
         </set>
         <where>
-            <if test="ID !=null">ID=#{ID}</if>
+            ID=#{ID}
         </where>
     </update>
 
     <!--删除流程日志-->
     <delete id="deleteProcessLog" parameterType="java.util.Map">
         DELETE FROM SYS_PROCESS_LOG WHERE SPS_ID = #{SPS_ID}
+        <if test="SPL_IS_DEFAULT != NULL and SPL_IS_DEFAULT != ''">
+            AND SPL_IS_DEFAULT = #{SPL_IS_DEFAULT}
+        </if>
     </delete>
 
     <!--查询作废记录-->
     <select id="selectProcessScheduleCancel" parameterType="java.util.Map" resultType="java.util.Map">
         SELECT SPSC.*,SPS.SPS_TABLE_NAME,SAI.SAI_NAME AS CANCEL_NAME
         FROM(
-            SELECT * FROM SYS_PROCESS_SCHEDULE_CANCEL
-            <where>
-                <if test="ID != NULL and ID != ''">
-                    AND ID = #{ID}
-                </if>
-            </where>
+        SELECT * FROM SYS_PROCESS_SCHEDULE_CANCEL
+        <where>
+            <if test="ID != NULL and ID != ''">
+                AND ID = #{ID}
+            </if>
+        </where>
         )SPSC
         INNER JOIN SYS_PROCESS_SCHEDULE SPS ON SPS.ID = SPSC.SPS_ID
         LEFT JOIN SYS_ACCOUNT_INFO SAI ON SAI.SO_ID = SPSC.SO_ID

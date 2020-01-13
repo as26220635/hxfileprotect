@@ -18,6 +18,12 @@
                value="${SPS.SPS_NAME}">
     </div>
     <div class="form-group has-feedback">
+        <label>步骤类型:</label>
+        <s:combobox sdtCode="SYS_STEP_BRANCH"
+                    custom='${fns:validField(TableName.SYS_PROCESS_STEP,"SPS_STEP_BRANCH")}'
+                    value="${SPS.SPS_STEP_BRANCH}" defaultValue="1"></s:combobox>
+    </div>
+    <div class="form-group has-feedback">
         <label>办理角色:</label>
         <s:treeBox custom='${fns:validField(TableName.SYS_PROCESS_STEP, "SR_ID")}'
                    value="${SPS.SR_ID}" nameValue="${SPS.SR_NAME}"

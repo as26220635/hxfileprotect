@@ -61,7 +61,10 @@ public class MenuServiceImpl extends BaseServiceImpl implements MenuService {
      */
     @Override
     public List<Map<String, Object>> selectMenuTreeSelectID(String selectId, String notParentId) {
-        return getOperatorMenuTree(baseDao, NameSpace.MenuMapper, "selectMenu", null, "0", selectId, notParentId, null);
+        List<Map<String, Object>> list = baseDao.selectList(NameSpace.MenuMapper, "selectMenu");
+        List<Map<String, Object>> treeList = getOperatorMenuTree_New(list, null, "0", selectId, notParentId, null);
+        return treeList;
+        //        return getOperatorMenuTree(baseDao, NameSpace.MenuMapper, "selectMenu", null, "0", selectId, notParentId, null);
     }
 
     /**

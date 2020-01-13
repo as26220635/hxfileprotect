@@ -53,7 +53,7 @@ public class ActiveUser implements java.io.Serializable {
     /**
      * 真实姓名
      */
-    private int accountName;
+    private String accountName;
 
     /**
      * 头像

@@ -530,6 +530,7 @@
         var id = data.ID;
         var BUS_PROCESS = data.BUS_PROCESS;
         var BUS_PROCESS2 = data.BUS_PROCESS2;
+        var SPS_ID = $(this).attr('data-schedule');
 
         process.showProcessHome({
             ID: id,
@@ -537,6 +538,7 @@
             BUS_PROCESS2: BUS_PROCESS2,
             SHOW_SO_ID: data.SHOW_SO_ID,
             PROCESS_TYPE: '${ProcessType.SUBMIT.toString()}',
+            SPS_ID: SPS_ID,
             dataGrid: $dataGrid
         });
     });
@@ -547,12 +549,14 @@
         var id = data.ID;
         var BUS_PROCESS = data.BUS_PROCESS;
         var BUS_PROCESS2 = data.BUS_PROCESS2;
-
+        var SPS_ID = $(this).attr('data-schedule');
+console.log(SPS_ID)
         process.showProcessHome({
             ID: id,
             BUS_PROCESS: BUS_PROCESS,
             BUS_PROCESS2: BUS_PROCESS2,
             PROCESS_TYPE: '${ProcessType.BACK.toString()}',
+            SPS_ID: SPS_ID,
             dataGrid: $dataGrid
         });
     });
@@ -563,11 +567,13 @@
         var id = data.ID;
         var BUS_PROCESS = data.BUS_PROCESS;
         var BUS_PROCESS2 = data.BUS_PROCESS2;
+        var SPS_ID = $(this).attr('data-schedule');
 
         process.processWithdraw({
             ID: id,
             BUS_PROCESS: BUS_PROCESS,
             BUS_PROCESS2: BUS_PROCESS2,
+            SPS_ID: SPS_ID,
             dataGrid: $dataGrid
         });
     });

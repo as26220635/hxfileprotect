@@ -8,9 +8,9 @@ public class initSqlMapper {
 
     public static void main(String[] args) throws IOException {
         //字段
-        String str = "ID\tSO_ID\tSHOW_SO_ID\tSPD_ID\tSPS_ID\tSPS_TABLE_ID\tSPS_TABLE_NAME\tSPS_AUDIT_STATUS\tSPS_BACK_STATUS\tSPS_BACK_STATUS_TRANSACTOR\tSPS_STEP_TYPE\tSPS_STEP_TRANSACTOR\tSPS_PREV_AUDIT_STATUS\tSPS_PREV_STEP_TYPE\tSPS_PREV_STEP_TRANSACTOR\tSPS_PREV_STEP_ID\tSPS_IS_CANCEL\tSPS_PROCESS_OPERATOR";
+        String str = "ID\tSPL_PARENTID\tSPD_ID\tSPS_ID\tSPL_STEP_ID\tSPL_STEP_TAB\tSPL_TABLE_ID\tSPL_STEP_BRANCH\tSPL_WAIT_STEP_TYPE\tSPL_WAIT_ID\tSPL_WAIT_TRANSACTOR\tSPL_WAIT_TIME\tSPL_SO_ID\tSPL_PROCESS_STATUS\tSPL_TRANSACTOR\tSPL_OPINION\tSPL_ENTRY_TIME\tSPL_TYPE\tSPL_STATUS\tSPL_IS_DEFAULT";
         //表名
-        String tablename = "sys_process_schedule";
+        String tablename = "sys_process_log";
         creatsql(str, tablename);
     }
 

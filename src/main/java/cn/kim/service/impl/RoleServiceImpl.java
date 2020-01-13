@@ -76,7 +76,10 @@ public class RoleServiceImpl extends BaseServiceImpl implements RoleService {
         //吧角色菜单转为MAP格式
         Map<String, String> roleMenuIds = toMapKey(roleMenus, "SM_ID");
 
-        return getOperatorMenuTree(baseDao, NameSpace.MenuMapper, "selectMenu", null, "0", null, null, roleMenuIds);
+        List<Map<String, Object>> list = baseDao.selectList(NameSpace.MenuMapper, "selectMenu");
+        List<Map<String, Object>> treeList = getOperatorMenuTree_New(list, null, "0", null, null, roleMenuIds);
+        return treeList;
+//        return getOperatorMenuTree(baseDao, NameSpace.MenuMapper, "selectMenu", null, "0", null, null, roleMenuIds);
     }
 
     /**
@@ -147,7 +150,7 @@ public class RoleServiceImpl extends BaseServiceImpl implements RoleService {
                 oldMap = selectRole(oldMap);
 
                 baseDao.update(NameSpace.RoleMapper, "updateRole", paramMap);
-                resultMap.put(MagicValue.LOG, "更新角色,更新前:" + formatColumnName(TableName.SYS_ROLE, oldMap)+ ",更新后:" + formatColumnName(TableName.SYS_ROLE, paramMap));
+                resultMap.put(MagicValue.LOG, "更新角色,更新前:" + formatColumnName(TableName.SYS_ROLE, oldMap) + ",更新后:" + formatColumnName(TableName.SYS_ROLE, paramMap));
             }
             status = STATUS_SUCCESS;
             desc = SAVE_SUCCESS;
