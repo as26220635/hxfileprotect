@@ -76,6 +76,8 @@
 <script src="${BASE_URL}resources/static/plugins/jquery-confirm/jquery-confirm.min.js?ver=${VERSION}"></script>
 <%--切分图片区域--%>
 <script src="${BASE_URL}resources/static/plugins/jquery-image-maps/jquery.image-maps5.0.js?ver=${VERSION}"></script>
+<%--流程图--%>
+<script src="${BASE_URL}resources/static/plugins/jsPlumb/jsplumb.min.js?ver=${VERSION}"></script>
 <%--主页js--%>
 <script src="${BASE_URL}resources/static/create/js/first.js?ver=${VERSION}"></script>
 <%--通用组件--%>
