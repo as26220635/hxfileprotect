@@ -34,7 +34,7 @@
         <spring.version>5.2.2.RELEASE</spring.version>
         <mybatis.version>3.5.3</mybatis.version>
         <mybatis-spring.version>2.0.3</mybatis-spring.version>
-        <mysql.version>8.0.11</mysql.version>
+        <mysql.version>8.0.16</mysql.version>
         <redisson.version>3.11.6</redisson.version>
         <fst.version>2.57</fst.version>
         <jackson.version>2.10.1</jackson.version>
