@@ -38,7 +38,7 @@
         <redisson.version>3.11.6</redisson.version>
         <fst.version>2.57</fst.version>
         <jackson.version>2.10.1</jackson.version>
-        <fastjson.version>1.2.62</fastjson.version>
+        <fastjson.version>1.2.83</fastjson.version>
         <druid.version>1.1.21</druid.version>
         <aspectjweaver.version>1.9.1</aspectjweaver.version>
         <!--<ehcache.version>2.6.11</ehcache.version>-->
